@@ -23,7 +23,7 @@ echo -n "Password: "
 read -s pw
 echo
 
-pwhash=$(echo -n "$pw" | openssl sha1)
+pwhash=$(echo -n "$pw" | openssl sha1 | awk '{ print $NF }')
 prefix=$(echo -n $pwhash | head -c5)
 suffix=$(echo -n $pwhash | tail -c35)
 
