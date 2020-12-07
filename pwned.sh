@@ -1,31 +1,34 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # pwned -- query HIBP's Pwned Passowords dataset
 
 set -e
 
-USAGE="Usage: $(basename $0) [-h]"
-
-if getopts h opt; then
-    echo $USAGE
-    echo
-    echo "Query the Pwned Passwords dataset."
-    echo "Refer to <https://haveibeenpwned.com/Passwords> for details."
-    exit
-fi
-
-if [[ $# -ne 0 ]]; then
-    echo >&2 $USAGE
+usage() {
+    echo >&2 "Usage: $(basename "$0") [-h]"
+    [ "$1" = '-h' ] && echo >&2 "
+Query the Pwned Passwords dataset.
+Refer to <https://haveibeenpwned.com/Passwords> for details."
     exit 2
-fi
+}
 
-echo -n "Password: "
-read -s pw
-echo
+# Prompt for a password.
+prompt() {
+    printf '%s' "$1" > /dev/tty
+    stty -echo
+    IFS= read -r "$2"
+    echo > /dev/tty
+    stty echo
+}
 
-pwhash=$(echo -n "$pw" | openssl sha1 | awk '{ print $NF }')
-prefix=$(echo -n $pwhash | head -c5)
-suffix=$(echo -n $pwhash | tail -c35)
+getopts h _ && usage -h
+[ $# -ne 0 ] && usage
+
+prompt "Password: " pw
+
+pwhash=$(printf '%s' "$pw" | openssl sha1 | awk '{ print $NF }')
+prefix=$(printf '%s' $pwhash | head -c5)
+suffix=$(printf '%s' $pwhash | tail -c35)
 
 curl https://api.pwnedpasswords.com/range/$prefix 2>/dev/null |
 grep -iq $suffix && echo "PWNED" || echo "Not pwned... yet"
